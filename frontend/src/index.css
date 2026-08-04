@@ -1,0 +1,3 @@
+/* Tailwind v4 needs exactly this one line. No config file, no PostCSS setup —
+   the Vite plugin in vite.config.ts does the rest. */
+@import 'tailwindcss';

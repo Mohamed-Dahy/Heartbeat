@@ -1,0 +1,28 @@
+# Everything listed here is kept OUT of the image.
+# Smaller image, faster builds, and no secrets or junk shipped by accident.
+
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Node's downloaded libraries — hundreds of MB. Stage 1 runs `npm ci` and
+# fetches its own copy inside the image, so sending ours would only slow the
+# build down (and could be the wrong platform's binaries entirely).
+node_modules/
+# The locally built page. Stage 1 builds a fresh one.
+frontend/dist/
+
+.git/
+.gitignore
+
+# Tests and docs are not needed to *run* the app.
+tests/
+pytest.ini
+requirements-dev.txt
+*.md
+
+# Never bake a database or secrets into an image.
+*.db
+*.sqlite3
+.env

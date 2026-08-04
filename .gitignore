@@ -1,0 +1,47 @@
+# --- Python ---
+# Compiled bytecode Python generates automatically. Never useful to share.
+__pycache__/
+*.py[cod]
+
+# The virtual environment. It contains hundreds of MB of installed libraries
+# that anyone can recreate from requirements.txt, so it does not belong in git.
+.venv/
+venv/
+
+# Caches written by our tools while they run.
+.pytest_cache/
+.ruff_cache/
+
+# --- This project's data ---
+# The SQLite database file we create in Step 4. This is *data*, not code:
+# it is different on every machine and changes every 60 seconds.
+*.db
+*.sqlite3
+
+# Secrets (API keys and similar) once we have any. These must never be
+# committed, which is why the file is ignored before it even exists.
+.env
+
+# --- Frontend (React) ---
+# node_modules is hundreds of MB of downloaded libraries, rebuildable from
+# package.json in seconds. Same reasoning as .venv above.
+node_modules/
+# The built output. Generated from src/, so it is not source.
+frontend/dist/
+
+# --- Docker ---
+# Compose lets you override settings locally in this file. It is personal
+# to your machine, so it stays out of the repo.
+docker-compose.override.yml
+
+# --- Local working notes ---
+# Personal notes and planning. Stay on disk, never published.
+CLAUDE.md
+PLAN.md
+PROGRESS.md
+
+# --- Editors / OS ---
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini

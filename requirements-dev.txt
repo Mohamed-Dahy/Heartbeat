@@ -1,0 +1,9 @@
+# Libraries needed only while developing and testing.
+# Kept separate from requirements.txt so the production Docker image in Step 5
+# does not ship a test framework it will never use.
+
+-r requirements.txt
+
+pytest==9.1.1
+pytest-asyncio==1.4.0
+respx==0.23.1

@@ -1,0 +1,10 @@
+# Libraries the application itself needs to run.
+# This is the file the Dockerfile will copy in Step 5.
+#
+# Versions are pinned exactly so that your machine, CI, and the server all
+# install the same code. "It worked yesterday" is usually an unpinned version.
+
+httpx==0.28.1
+fastapi==0.141.1
+uvicorn[standard]==0.52.1
+prometheus-client==0.26.0
