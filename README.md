@@ -94,9 +94,10 @@ itself reporting that it is broken — so that counts as down.
 | Backend | Python 3.12, FastAPI, httpx, SQLite |
 | Frontend | React 19, TypeScript, Tailwind CSS, Vite |
 | Testing | pytest, pytest-asyncio, respx |
-| Containers | Docker (multi-stage build) |
+| Containers | Docker (multi-stage build), published for amd64 + arm64 |
 | Metrics | prometheus-client |
-| Planned | Prometheus, Grafana, Alertmanager, Loki, Terraform, Oracle Cloud (ARM), Caddy, GitHub Actions, DuckDNS |
+| CI | GitHub Actions, ruff, oxlint, GHCR |
+| Planned | Prometheus, Grafana, Alertmanager, Loki, Terraform, Oracle Cloud (ARM), Caddy, DuckDNS |
 
 Everything except the final row is in use today.
 
@@ -182,6 +183,14 @@ docker run -d --name heartbeat -p 8000:8000 -v heartbeat-data:/data \
 Images are tagged `latest` and `sha-<commit>`. Prefer the commit tag when you
 need to know exactly what is running.
 
+Each tag covers **both `linux/amd64` and `linux/arm64`**, so the same command
+works on an Intel laptop, an Apple Silicon Mac, or an ARM server. Docker picks
+the right one:
+
+```bash
+docker buildx imagetools inspect ghcr.io/mohamed-dahy/heartbeat:latest
+```
+
 To build it yourself instead:
 
 ```bash
@@ -246,7 +255,8 @@ Heartbeat/
 - [x] **5. Containerisation** — a Dockerfile that runs as a non-root user, with a healthcheck
 - [x] **6. Core app finished** — four providers, a 60-second scheduler, `/healthz`,
       Prometheus `/metrics`, and a React status page bundled into the same image
-- [ ] **7. CI/CD** — GitHub Actions: lint, test, build, push to GHCR for amd64 + arm64
+- [x] **7. CI pipeline** — GitHub Actions: tests, lint, and multi-architecture
+      images published to GHCR on every push to `main`
 - [ ] **8. Infrastructure** — Terraform-provisioned Oracle Cloud ARM server
 - [ ] **9. Public** — DuckDNS domain, Caddy for HTTPS, automatic deploys
 - [ ] **10. Observability** — Prometheus, Grafana, Alertmanager, Loki
