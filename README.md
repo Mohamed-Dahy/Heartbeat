@@ -171,6 +171,19 @@ configuration is needed on the backend.
 
 ### Running it in Docker
 
+A pre-built image is published on every push to `main`, so you do not need to
+build anything:
+
+```bash
+docker run -d --name heartbeat -p 8000:8000 -v heartbeat-data:/data \
+  ghcr.io/mohamed-dahy/heartbeat:latest
+```
+
+Images are tagged `latest` and `sha-<commit>`. Prefer the commit tag when you
+need to know exactly what is running.
+
+To build it yourself instead:
+
 ```bash
 docker build -t heartbeat .
 docker run -d --name heartbeat -p 8000:8000 -v heartbeat-data:/data heartbeat
