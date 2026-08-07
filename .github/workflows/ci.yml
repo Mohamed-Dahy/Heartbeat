@@ -146,4 +146,11 @@ jobs:
           # as copying requirements.txt before the app code in the Dockerfile,
           # one level up.
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # ignore-error=true matters. GitHub's cache service is occasionally
+          # flaky and fails while *writing* the cache — after the image has
+          # already built perfectly. Without this the whole job goes red over a
+          # failed optimisation.
+          #
+          # The rule: never let a speed-up break the thing it was speeding up.
+          # A missing cache costs a slower build. A red pipeline costs trust.
+          cache-to: type=gha,mode=max,ignore-error=true
