@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import sqlite3
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 # One file, sitting next to the code. No server, no password, no setup.
@@ -27,6 +27,21 @@ CREATE TABLE IF NOT EXISTS checks (
 )
 """
 
+# An index is a lookup table the database keeps on the side — like the index at
+# the back of a book. Without one, answering "which rows are for openai?" means
+# reading every single row.
+#
+# We add exactly two, because each one costs a little on every write and a
+# little disk. These are the two our actual queries need.
+INDEXES = [
+    # Serves both the status page (newest row per provider) and history filtered
+    # to one provider. Provider first because that is what we filter on; id
+    # second because that is what we then sort by.
+    "CREATE INDEX IF NOT EXISTS idx_checks_provider_id ON checks (provider, id)",
+    # Serves the daily cleanup, which deletes everything older than a date.
+    "CREATE INDEX IF NOT EXISTS idx_checks_checked_at ON checks (checked_at)",
+]
+
 
 def get_connection() -> sqlite3.Connection:
     conn = sqlite3.connect(DB_PATH)
@@ -36,11 +51,18 @@ def get_connection() -> sqlite3.Connection:
 
 
 def init_db() -> None:
-    """Create the table if it is not there yet. Safe to run every startup."""
+    """Create the table and indexes if missing. Safe to run every startup.
+
+    IF NOT EXISTS on both means this also upgrades a database that already has
+    data: SQLite builds the missing indexes over the existing rows and leaves
+    everything else alone.
+    """
     conn = get_connection()
     try:
         with conn:
             conn.execute(SCHEMA)
+            for statement in INDEXES:
+                conn.execute(statement)
     finally:
         conn.close()
 
@@ -76,6 +98,28 @@ def save_results(rows: list[dict]) -> None:
                     for row in rows
                 ],
             )
+    finally:
+        conn.close()
+
+
+def delete_checks_older_than(days: int) -> int:
+    """Delete checks older than `days`. Returns how many rows went.
+
+    Without this the table grows forever: four rows a minute is 5,760 a day and
+    about 2.1 million a year. The disk is not really the problem — the problem
+    is that every query has more rows to wade through, on a small server, for
+    the rest of the app's life.
+    """
+    cutoff = (datetime.now(UTC) - timedelta(days=days)).isoformat()
+
+    conn = get_connection()
+    try:
+        with conn:
+            # checked_at is stored as an ISO timestamp, and ISO timestamps sort
+            # correctly as plain text — so a simple "<" comparison works and can
+            # use the index.
+            cursor = conn.execute("DELETE FROM checks WHERE checked_at < ?", (cutoff,))
+            return cursor.rowcount
     finally:
         conn.close()
 

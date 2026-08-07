@@ -9,9 +9,10 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import time
 from dataclasses import asdict
 
-from app.db import save_results
+from app.db import delete_checks_older_than, save_results
 from app.metrics import record_round
 from app.probe import check_url
 from app.providers import PROVIDERS
@@ -23,9 +24,22 @@ logger = logging.getLogger(__name__)
 # without changing code if a provider ever objects to the traffic.
 DEFAULT_INTERVAL_SECONDS = 60.0
 
+# How much history to keep. 30 days is roughly 173,000 rows — plenty for the
+# status page and any "was it broken last week?" question, and small enough to
+# stay fast forever.
+DEFAULT_RETENTION_DAYS = 30
+
+# Old rows are deleted once a day, not every round. Running the delete 1,439
+# extra times a day to find nothing is pure waste.
+CLEANUP_INTERVAL_SECONDS = 24 * 60 * 60
+
 
 def interval_seconds() -> float:
     return float(os.getenv("CHECK_INTERVAL_SECONDS", DEFAULT_INTERVAL_SECONDS))
+
+
+def retention_days() -> int:
+    return int(os.getenv("HEARTBEAT_RETENTION_DAYS", DEFAULT_RETENTION_DAYS))
 
 
 async def run_check_round() -> list[dict]:
@@ -57,9 +71,25 @@ async def run_check_round() -> list[dict]:
     return payload
 
 
+async def run_cleanup() -> int:
+    """Delete history older than the retention window."""
+    days = retention_days()
+    deleted = await asyncio.to_thread(delete_checks_older_than, days)
+    logger.info("cleanup: removed %d checks older than %d days", deleted, days)
+    return deleted
+
+
 async def check_loop() -> None:
     """Run a round, wait, repeat — for as long as the app is alive."""
-    logger.info("check loop started, every %.0fs", interval_seconds())
+    logger.info(
+        "check loop started, every %.0fs, keeping %d days of history",
+        interval_seconds(),
+        retention_days(),
+    )
+
+    # None rather than 0, so the first pass always cleans up. monotonic() has no
+    # defined starting point, so comparing against 0 would be meaningless.
+    last_cleanup: float | None = None
 
     while True:
         try:
@@ -68,6 +98,14 @@ async def check_loop() -> None:
                 "check round done: %s",
                 {row["provider"]: row["status"] for row in results},
             )
+
+            # monotonic() only ever counts forwards. The wall clock can jump
+            # backwards when the machine syncs its time, which would leave this
+            # waiting a very long time for the next cleanup.
+            now = time.monotonic()
+            if last_cleanup is None or now - last_cleanup >= CLEANUP_INTERVAL_SECONDS:
+                await run_cleanup()
+                last_cleanup = now
         except asyncio.CancelledError:
             # The server is shutting down. Let the cancellation through.
             logger.info("check loop stopping")
