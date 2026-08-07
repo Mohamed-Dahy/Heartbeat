@@ -51,3 +51,64 @@ jobs:
       # just because a provider was having a bad afternoon.
       - name: Run the tests
         run: pytest -v
+
+  # A separate job, so it runs at the same time as the tests rather than after.
+  # You want to hear about a lint problem AND a test failure in the same three
+  # minutes, not one and then the other.
+  lint-python:
+    name: Lint (Python)
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v7
+
+      - name: Install Python 3.12
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      # Finds real problems: unused imports, undefined names, likely bugs.
+      - name: Lint
+        run: ruff check .
+
+      # --check means "tell me if the formatting is wrong", not "fix it".
+      # CI must never quietly rewrite your code; it reports, you decide.
+      - name: Check formatting
+        run: ruff format --check .
+
+  lint-frontend:
+    name: Lint (frontend)
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v7
+
+      - name: Install Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # npm ci installs exactly what package-lock.json says and fails if the
+      # lockfile disagrees with package.json. Repeatable, unlike npm install.
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
+
+      # The type checker is a stricter net than the linter: it proves the data
+      # we get back from our own API matches the shape the page expects.
+      - name: Type-check
+        working-directory: frontend
+        run: npx tsc -b

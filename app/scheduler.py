@@ -36,9 +36,13 @@ async def run_check_round() -> list[dict]:
     # another. Four 700ms checks take about 700ms, not 2.8 seconds.
     results = await asyncio.gather(*(check_url(PROVIDERS[name]) for name in names))
 
+    # strict=True makes zip raise if the two lists are ever different lengths,
+    # instead of silently stopping at the shorter one. They cannot differ today,
+    # but a silent truncation here would mean quietly dropping a provider from
+    # every round — exactly the kind of bug nobody notices.
     payload = [
         {"provider": name, **asdict(result)}
-        for name, result in zip(names, results)
+        for name, result in zip(names, results, strict=True)
     ]
 
     # sqlite3 is synchronous: it stops everything until the write finishes.

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import sqlite3
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 # One file, sitting next to the code. No server, no password, no setup.
@@ -49,7 +49,7 @@ def save_results(rows: list[dict]) -> None:
     """Save one round of checks."""
     # Stored in UTC. A server in Germany and a laptop in Egypt must agree on
     # what "10:00" means, and UTC is the one clock everybody shares.
-    checked_at = datetime.now(timezone.utc).isoformat()
+    checked_at = datetime.now(UTC).isoformat()
 
     conn = get_connection()
     try:
@@ -57,8 +57,10 @@ def save_results(rows: list[dict]) -> None:
         with conn:
             conn.executemany(
                 """
-                INSERT INTO checks
-                    (provider, url, status, response_time_ms, status_code, error, checked_at)
+                INSERT INTO checks (
+                    provider, url, status, response_time_ms,
+                    status_code, error, checked_at
+                )
                 VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 [

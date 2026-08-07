@@ -1,0 +1,22 @@
+# Ruff: linter and formatter for Python, in one tool.
+#
+# It replaces what used to be three separate programs — flake8 (finds problems),
+# isort (sorts imports) and black (formats code). One tool, one config file, and
+# it runs in milliseconds instead of seconds.
+
+line-length = 88
+
+# Tells ruff which Python we target, so it can suggest modern syntax without
+# proposing anything 3.12 cannot run.
+target-version = "py312"
+
+[lint]
+# Each of these is a family of rules. Ruff's own defaults are only E4/E7/E9 and
+# F, which is thin — these four additions are the ones that earn their keep.
+select = [
+    "E", # pycodestyle: layout problems, including lines that are too long
+    "F", # pyflakes: unused imports, unused variables, undefined names
+    "I", # isort: imports sorted and grouped consistently
+    "UP", # pyupgrade: flags old syntax that has a cleaner modern form
+    "B", # bugbear: things that are legal Python but usually a bug
+]
