@@ -1,0 +1,53 @@
+# Continuous Integration.
+#
+# Every push to main, and every pull request, GitHub gives us a clean computer
+# that checks out this repo and proves the tests still pass. Nothing is
+# installed on it beforehand, so it cannot accidentally rely on something that
+# only exists on one developer's machine.
+#
+# This file lives in .github/workflows/ — GitHub finds it by that path alone.
+
+name: CI
+
+# --- When to run -----------------------------------------------------------
+on:
+  push:
+    branches: [main]
+  # Every pull request too, so problems are visible before merging rather than
+  # after. Deliberately not "every branch": that spends time telling you about
+  # work you already know is half finished.
+  pull_request:
+
+jobs:
+  test:
+    name: Tests
+    # Pinned to a specific Ubuntu, not "ubuntu-latest". Latest silently moves
+    # under you, and one morning the build breaks with no commit to blame.
+    runs-on: ubuntu-24.04
+
+    steps:
+      # The runner starts completely empty — it does not even have our code.
+      - name: Check out the code
+        uses: actions/checkout@v7
+
+      - name: Install Python 3.12
+        uses: actions/setup-python@v7
+        with:
+          # Same version as the Dockerfile and local development, so all three
+          # agree.
+          python-version: "3.12"
+          # Keep the downloaded packages between runs. Without this every run
+          # re-downloads FastAPI and friends from scratch.
+          cache: pip
+          # Tell the cache which file decides when it is stale. Left unset it
+          # looks for requirements.txt, but our test tools are in the dev file.
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      # The tests never touch the network: respx intercepts every outgoing
+      # request, and fails loudly on any we did not mock. So this cannot go red
+      # just because a provider was having a bad afternoon.
+      - name: Run the tests
+        run: pytest -v
