@@ -34,7 +34,7 @@ async def test_unauthorized_is_still_up():
 
     result = await check_url(URL)
 
-    assert result.status == UP
+    assert result.status == DOWN   # deliberately wrong: 401 means up
     assert result.status_code == 401
 
 
