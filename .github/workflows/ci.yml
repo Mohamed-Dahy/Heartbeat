@@ -112,3 +112,38 @@ jobs:
       - name: Type-check
         working-directory: frontend
         run: npx tsc -b
+
+  # Proves the image builds on a machine that has never seen this project.
+  #
+  # This catches something nothing else can. Every local `docker build` has run
+  # with frontend/node_modules and frontend/dist already sitting on disk. Here
+  # neither exists — the runner has only what is committed to git. If the build
+  # quietly leaned on anything untracked, it fails here.
+  #
+  # Deliberately does NOT wait for the tests. Separate job, so both run at once
+  # and you learn about a broken Dockerfile and a broken test together.
+  build:
+    name: Docker build
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v7
+
+      # Buildx is Docker's newer builder. We need it for the layer cache below,
+      # and later for building two architectures at once.
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build the image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          # Build only. Publishing comes in the next step, once we trust it.
+          push: false
+          # Store the layers in GitHub's cache and reuse them next run. Without
+          # this, every run reinstalls React and FastAPI from scratch. Same idea
+          # as copying requirements.txt before the app code in the Dockerfile,
+          # one level up.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
