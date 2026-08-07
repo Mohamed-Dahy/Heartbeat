@@ -150,7 +150,7 @@ pip install -r requirements-dev.txt
 pytest -v
 ```
 
-Expected output: **12 passed**. The tests make no real network calls — outgoing
+Expected output: **17 passed**. The tests make no real network calls — outgoing
 HTTP is intercepted by [respx](https://lundberg.github.io/respx/) and answered
 with fixed responses, so the suite is fast and cannot fail because a provider is
 having a bad day.
@@ -251,10 +251,14 @@ Heartbeat/
 ├── tests/
 │   ├── test_probe.py     # probe tests, with mocked HTTP
 │   ├── test_scheduler.py # background checker tests
-│   └── test_metrics.py   # Prometheus metric tests
+│   ├── test_metrics.py   # Prometheus metric tests
+│   └── test_retention.py # index and cleanup tests
+├── .github/workflows/
+│   └── ci.yml            # tests, lint, and multi-arch image publishing
 ├── requirements.txt      # runtime dependencies
 ├── requirements-dev.txt  # runtime + test dependencies
 ├── pytest.ini            # test configuration
+├── ruff.toml             # linter and formatter settings
 ├── Dockerfile            # how the image is built
 └── .dockerignore         # what stays out of the image
 ```
