@@ -53,6 +53,19 @@ Checks run **automatically every 60 seconds** in the background, so
 `/api/status` is a read, not a trigger — refreshing it does not cause a check.
 Set `CHECK_INTERVAL_SECONDS` to change the interval.
 
+History older than 30 days is deleted once a day, so the database stays a fixed
+size rather than growing forever. Set `HEARTBEAT_RETENTION_DAYS` to keep more or
+less.
+
+### Configuration
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `CHECK_INTERVAL_SECONDS` | `60` | Seconds between check rounds |
+| `HEARTBEAT_RETENTION_DAYS` | `30` | How much history to keep |
+| `HEARTBEAT_DB` | `heartbeat.db` | Where the database file lives |
+| `HEARTBEAT_STATIC` | `frontend/dist` | Where the built status page lives |
+
 `/api/history` accepts `?provider=openai` to filter and `?limit=100` to change
 how many rows come back (1–500, default 50).
 
@@ -277,4 +290,7 @@ Each phase is built and verified before the next one starts.
   Prometheus, but worth knowing before reading a graph.
 - Running with multiple uvicorn workers would start one scheduler per worker and
   multiply the rows. Fine today (single worker), needs handling before scaling.
+- A 401 proves the API is reachable, not that inference works or that your own
+  requests would succeed. Rate limits and model quality are invisible to it —
+  see the roadmap.
 - Not deployed anywhere yet — it runs locally only.
